@@ -1,0 +1,87 @@
+﻿<UserControl x:Class="BookList.View.BookListPresentation"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:vm="clr-namespace:BookList.VM"
+             xmlns:model="clr-namespace:BookList.Model"
+             xmlns:conv="clr-namespace:BookList.View.Converters"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=vm:BookListViewModel, IsDesignTimeCreatable=False}"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <conv:PriceToBrushConverter x:Key="PriceToBrushConverter"/>
+
+        <!-- this magic is needed to get the list of enum values -->
+        <ObjectDataProvider MethodName="GetValues" ObjectType="{x:Type sys:Enum}" x:Key="BindingEnumValues">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="model:Binding"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <DataGrid AutoGenerateColumns="False"
+            x:Name="MainDG"
+            Grid.Row="0"
+            ItemsSource="{Binding Books}">
+            <DataGrid.Resources>
+                <Style TargetType="{x:Type TextBlock}" x:Key="RightAlignedCell">
+                    <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                    <Setter Property="TextAlignment" Value="Right"/>
+                </Style>
+                <Style TargetType="{x:Type TextBlock}" x:Key="PriceCell" BasedOn="{StaticResource RightAlignedCell}">
+                    <Setter Property="Foreground">
+                        <Setter.Value>
+                            <MultiBinding Converter="{StaticResource PriceToBrushConverter}">
+                                <Binding Path="Price"/>
+                                <Binding ElementName="MainDG" Path="DataContext.MinPrice"/>
+                                <Binding ElementName="MainDG" Path="DataContext.MaxPrice"/>
+                            </MultiBinding>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </DataGrid.Resources>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Title" Binding="{Binding Title}"/>
+                <DataGridTextColumn Header="Author" Binding="{Binding Author}"/>
+                <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat=c}"
+                                    ElementStyle="{StaticResource PriceCell}"/>
+                <DataGridTextColumn Header="Year" Binding="{Binding Year}"
+                                    ElementStyle="{StaticResource RightAlignedCell}"/>
+                <DataGridComboBoxColumn Header="Binding"
+                                        ItemsSource="{Binding Source={StaticResource BindingEnumValues}}"
+                                        SelectedItemBinding="{Binding Binding}"/>
+                <DataGridCheckBoxColumn Header="In Stock" Binding="{Binding IsInStock, UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTemplateColumn Header="Show Description" CanUserSort="False" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Click="ShowDescription" Tag="{Binding Description}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsInStock}">
+                            <DataTrigger.Value>
+                                <sys:Boolean>False</sys:Boolean>
+                            </DataTrigger.Value>
+                            <Setter Property="Background" Value="#e0e0e0"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+        </DataGrid>
+
+        <StackPanel Grid.Row="1" Margin="2">
+            <ToggleButton Click="OnToggleFilter" Padding="10,0" HorizontalAlignment="Left">Filter Books not in Stock</ToggleButton>
+        </StackPanel>
+    </Grid>
+</UserControl>
